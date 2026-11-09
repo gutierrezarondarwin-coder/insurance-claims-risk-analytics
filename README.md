@@ -1,101 +1,128 @@
 # Insurance Claims & Risk Analytics
 
-A MySQL and Power BI portfolio project examining insurance claims, coverage exceptions, processing delays, and recorded payment activity. The workflow connects SQL data-quality checks and reusable reporting views to a three-page dashboard for business review.
+A SQL and Power BI portfolio project analyzing **25,000 claims across a synthetic insurance dataset** to identify coverage exceptions, processing delays, and priorities for review.
 
-**Tech stack:** MySQL 8.0+, SQL, Power BI Desktop. SQL techniques include joins, conditional aggregation, CTEs, and window functions.
+The project applies an internal audit perspective to data analysis: check source-data quality, define transparent review rules, compare results across policy types, and communicate findings through reusable SQL views and a three-page Power BI report.
+
+**Tools:** MySQL 8.0+, SQL, Power BI Desktop  
+**Techniques:** joins, CASE-based flags, conditional aggregation, CTEs, percentage calculations, and `ROW_NUMBER()` window functions
+
+## Results at a Glance
+
+The documented project snapshot contains **10,000 customers, 18,000 policies, 25,000 claims, and 80,000 payment records**.
+
+| Claims indicator | Result | Percentage of all claims |
+| --- | ---: | ---: |
+| Claims with more than 60 recorded processing days | 320 | 1.28% |
+| Claims exceeding recorded policy coverage | 21 | 0.08% |
+| Claims meeting both conditions | 0 | 0.00% |
+| **Unique claims meeting either review rule** | **341** | **1.36%** |
+
+Each flagged claim is counted once:
+
+`21 coverage exceptions + 320 processing flags − 0 overlap = 341 unique flagged claims`
+
+Percentages use the documented 25,000-claim population and are rounded to two decimal places.
 
 ## Business Questions
 
-- Which claims exceed their policy's recorded coverage or take more than 60 processing days?
-- How do review flags, claim amounts, and claim-to-coverage ratios vary by policy type?
-- How do recorded payment amounts vary by status, and which payment methods are most common?
+- Which claims require review because their amounts exceed recorded policy coverage?
+- Which claims have more than 60 recorded processing days?
+- How do flag counts and rates differ across policy types?
+- Which claims rank highest by amount or claim-to-coverage percentage within each policy type?
+- How are recorded payment amounts and records distributed across source statuses and payment methods?
 
-## Dataset
+## Business Relevance
 
-The project uses synthetic data for portfolio demonstration.
+The analysis demonstrates how claims data can support a focused review process:
 
-| Table | Records |
-| --- | ---: |
-| Customers | 10,000 |
-| Policies | 18,000 |
-| Claims | 25,000 |
-| Payments | 80,000 |
+- **Exception identification:** isolates 341 claims meeting at least one defined rule from a population of 25,000.
+- **Review prioritization:** distinguishes coverage exceptions from processing flags and assigns transparent review scores.
+- **Policy-type comparison:** reports both flag counts and rates so segments can be assessed relative to their claim volumes.
+- **Targeted investigation:** ranks up to three claims per policy type by amount and, separately, by claim-to-coverage percentage.
+- **Reporting consistency:** uses shared SQL views and documented metric definitions to support comparison between SQL outputs and Power BI indicators.
 
-## Key Findings
+These are demonstrated analytical uses. The project does not measure actual reductions in losses, processing time, or review effort.
 
-Reported results for the documented synthetic snapshot:
+## Analytical Workflow
 
-| Indicator | Result |
-| --- | ---: |
-| Claims exceeding recorded policy coverage | 21 |
-| Claims with processing time greater than 60 days | 320 |
-| Claims meeting both rules | 0 |
-| **Unique flagged claims** | **341 (1.36%)** |
-| Total recorded payment amount, all statuses | 537,276,369.37 |
-| Recorded amount with `Paid` status | 452,200,033.15 |
+1. **Profile the data.** Inspect record counts, identifiers, missing values, categories, monetary values, dates, and table relationships.
+2. **Prepare reporting views.** Apply selected customer-field standardization and create views for customer, policy, claims, and payment reporting.
+3. **Analyze claims.** Calculate coverage and processing flags, overlap, review scores, policy-type rates, ratios, and rankings.
+4. **Summarize payment activity.** Compare recorded payment counts and amounts by source status and payment method.
+5. **Present and reconcile results.** Organize findings in Power BI and compare core claims indicators with SQL results.
 
-**Claim status:** 17,954 Approved · 4,541 Denied · 2,505 Pending — 25,000 claims in total.
-
-Unique flagged claims count each claim meeting either rule once: `21 + 320 - 0 = 341`. The flagged rate is `341 / 25,000 = 1.364%`, displayed as **1.36%**.
-
-Payment amounts describe recorded activity. `Paid` is a source status label, and the amounts are not independently verified collections. Currency is unspecified.
+Data-quality checks identify issues; their presence does not establish that every check passed. The views do not perform comprehensive data remediation.
 
 ## Review Rules
 
-```text
-coverage_exception = 1 when claim_amount > coverage_amount; otherwise 0
-processing_delay   = 1 when processing_days > 60; otherwise 0
-risk_score         = 2 * coverage_exception + processing_delay
-```
+| Indicator | Definition |
+| --- | --- |
+| Coverage exception | `claim_amount > coverage_amount` |
+| Processing flag | `processing_days > 60` |
+| Unique flagged claim | Meets either rule; counted once |
+| Review score | `2 × coverage_exceeded_flag + processing_delay_flag` |
+| Claim-to-coverage percentage | `claim_amount / coverage_amount × 100` |
 
-The SQL names these indicators `coverage_exceeded_flag` and `processing_delay_flag`. Scores range from 0 (neither rule) to 3 (both rules); unique flagged counts use distinct claim IDs, not the sum of weighted scores.
+Scores range from 0 to 3. The 60-day threshold and 2:1 weighting are project-defined rules for review prioritization.
 
-The **60-day threshold and 2:1 weighting are project-defined review rules**. The score supports review prioritization and does not predict fraud. Pending and denied claims remain included in the analysis; a flag does not establish an incorrect payout.
+The analysis includes pending and denied claims. A flag does not establish fraud, an incorrect payout, or a contractual service-level breach. A zero score means neither rule was triggered; it does not establish that a claim is free of other risks or missing inputs.
 
-## Dashboards
+## Power BI Report
 
 ### Executive Overview
 
-Portfolio counts, amounts, and claims review indicators.
+Portfolio counts, recorded amounts, and headline claims review indicators.
 
-![Executive Overview dashboard](screenshots/executive_overview.png)
+![Executive Overview](screenshots/executive_overview.png)
 
 ### Claims Risk Analysis
 
-Coverage exceptions, processing delays, risk scores, and policy-type comparisons.
+Coverage exceptions, processing flags, review scores, and policy-type comparisons.
 
-![Claims Risk Analysis dashboard](screenshots/claims_risk_analysis.png)
+![Claims Risk Analysis](screenshots/claims_risk_analysis.png)
 
 ### Payment Performance
 
-Recorded payment activity, source-status distribution, and payment-method mix.
+Recorded payment activity by source status and payment method.
 
-![Payment Performance dashboard](screenshots/payment_performance.png)
+![Payment Performance](screenshots/payment_performance.png)
 
-## Project Files
+Payment amounts describe recorded activity. Source labels such as `Paid`, `Late`, and `Missed` do not independently establish verified collections, overdue balances, or payment timeliness.
+
+## Repository Guide
 
 | File | Purpose |
 | --- | --- |
-| [01_data_quality.sql](sql/01_data_quality.sql) | Profile counts, keys, missing values, categories, amounts, dates, and references |
-| [02_cleaned_views.sql](sql/02_cleaned_views.sql) | Define reusable reporting views |
-| [03_claims_risk_analysis.sql](sql/03_claims_risk_analysis.sql) | Analyze review flags, scores, policy segments, ratios, and rankings |
-| [04_payment_performance.sql](sql/04_payment_performance.sql) | Summarize recorded payments by status and method |
-| [Methodology](documentation/methodology.md) | Analytical approach, definitions, assumptions, and workflow |
-| [Data Dictionary](documentation/data_dictionary.md) | Tables, fields, relationships, and derived metrics |
-| [Validation Notes](documentation/validation_notes.md) | Evidence scope, benchmark reconciliation, and rerun controls |
-| [Power BI Report](powerbi/Insurance_Claims_Risk_Analytics.pbix) | Download the three-page report for Power BI Desktop |
+| [Data-quality checks](sql/01_data_quality.sql) | Profile schema, counts, identifiers, missing values, categories, amounts, dates, and references |
+| [Reporting views](sql/02_cleaned_views.sql) | Define reusable views and inspect their populations |
+| [Claims risk analysis](sql/03_claims_risk_analysis.sql) | Calculate flags, scores, policy-type comparisons, ratios, and rankings |
+| [Payment analysis](sql/04_payment_performance.sql) | Summarize recorded payments by status and method |
+| [Methodology](documentation/methodology.md) | Explain analytical definitions, assumptions, and workflow |
+| [Data dictionary](documentation/data_dictionary.md) | Describe tables, fields, relationships, and derived metrics |
+| [Validation notes](documentation/validation_notes.md) | Document reconciliation benchmarks, evidence boundaries, and rerun controls |
+| [Power BI report](powerbi/Insurance_Claims_Risk_Analytics.pbix) | Download the three-page report for Power BI Desktop |
 
 ## How to Explore
 
-1. Review the dashboard screenshots and key findings above.
-2. Read the methodology and SQL files to follow the analysis from profiling to reporting.
-3. To rerun SQL, use an existing populated MySQL 8.0+ database named `insurance_risk_analytics` and run files **01 → 02 → 03 → 04**. Review data-quality findings and reconcile raw/view counts and distinct IDs before interpreting results. Inspect existing view definitions before running file 02.
-4. Open the `.pbix` in Power BI Desktop. **Refresh requires the matching MySQL source database and views**, a reachable server, valid credentials, and compatible MySQL connection support. Update local connection settings and compare report results with SQL under the same filters.
+1. Start with the findings and dashboard screenshots.
+2. Review the claims SQL and methodology to understand the rules and calculations.
+3. To rerun the analysis, provide the matching populated MySQL 8.0+ database named `insurance_risk_analytics` and run the SQL files in order: **01 → 02 → 03 → 04**.
+4. Inspect existing view definitions before running file 02, which uses `CREATE VIEW`.
+5. Reconcile raw and analytical-view populations, distinct claim IDs, and review flags before interpreting results.
+6. Open the `.pbix` in Power BI Desktop. Refresh requires the matching MySQL database and views, connection support, and valid local connection settings.
 
-## Scope and Limitations
+## Validation and Scope
 
-- Results describe synthetic data and should not be generalized to an actual insurer.
-- The repository contains analytical scripts; database setup, data-generation/import scripts, and a reproducible seed are not included. A checkout alone cannot recreate the source data.
-- Review flags are descriptive rules, not fraud predictions or validated actuarial probabilities. The processing threshold is not a documented contractual service level.
-- Payment-status summaries do not establish on-time collections or overdue aging without billing and settlement definitions.
-- Results reflect the project owner's reported snapshot. Documentation review and arithmetic checks are separate from independent SQL execution or Power BI refresh; see the Validation Notes for evidence boundaries.
+The project owner ran the SQL in MySQL Workbench and reported matching reconciliation results. Core claims indicators were also reported as reconciled between SQL and Power BI. Detailed evidence boundaries and repeat-validation instructions are documented in the validation notes.
+
+- The data is synthetic; findings demonstrate analytical methods rather than actual insurer performance.
+- Review scores are descriptive rules, not a predictive fraud model or actuarial risk probability.
+- Claims-to-policy joins require grain and relationship checks to prevent excluded or multiplied records.
+- Claim-to-coverage percentages are not premium-based insurance loss ratios.
+- Payment reporting does not establish collection efficiency or overdue aging without billing and settlement definitions.
+- Database setup, data-generation/import scripts, and a reproducible seed are not included. A repository checkout alone cannot recreate the source dataset.
+
+## About This Project
+
+This independent portfolio project extends my internal audit and Excel-based data analytics experience into SQL analysis and Power BI reporting. It demonstrates how I approach data validation, exception analysis, review prioritization, and communication of findings.
